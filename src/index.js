@@ -21,6 +21,7 @@ import axios from '../node_modules/axios';
 
 async function displayCarbonUsage(apiKey, region)
 {
+
     try{
         await axios 
         .get('https://api.co2signal.com/v1/latest', {
@@ -34,6 +35,8 @@ async function displayCarbonUsage(apiKey, region)
         .then((response) =>
         {
             let CO2 = Math.floor(response.data.data.carbonIntensity);
+
+            calculateColor(CO2);
 
             loading.style.display = 'none';
             form.style.display = 'none';
@@ -92,6 +95,14 @@ function init()
         form.style.display = 'none';
         clearBtn.style.display = 'block';
     }
+
+    chrome.runtime.sendMessage(
+        {
+            action:'updateIcon',
+            value: {
+                color: 'green',
+            },
+        });
 };
 
 
@@ -108,4 +119,25 @@ function reset(e)
 
     localStorage.removeItem('regionName');
     init();
+}
+
+function calculateColor(value)
+{
+    let co2Scale = [0, 150, 600, 750, 800];
+
+    let colors = ['#2AA364', '#F5EB4D', '#9E4229', '#381D02', '#381D02'];
+
+    let closestNum = co2Scale.sort((a,b) => {
+        return Math.abs(a - value) - Math.abs(b - value);
+    })[0];
+
+    console.log(value + 'is closest to' + closestNum);
+
+    let scaleIndex = co2Scale.findIndex(num);
+
+    let closestColor = colors[scaleIndex];
+	console.log(scaleIndex, closestColor);
+
+	chrome.runtime.sendMessage({ action: 'updateIcon', value: { color: closestColor } });
+
 }
